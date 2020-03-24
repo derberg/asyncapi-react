@@ -23,7 +23,7 @@ jobs:
       - name: Run library tests
         run: npm test
       - name: Build library
-        run: npm run prepare
+        run: npm run build
       - name: Get version from package.json before release step
         id: initversion
         run: echo "::set-output name=version::$(npm run get-version --silent)"
