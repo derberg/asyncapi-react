@@ -1,30 +1,38 @@
-import { PushStateBehavior } from '../types';
+import { ExtensionComponentProps } from '../types';
 
 export interface ConfigInterface {
   schemaID?: string;
   show?: ShowConfig;
   expand?: ExpandConfig;
-  showErrors?: boolean;
+  sidebar?: SideBarConfig;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parserOptions?: any;
-  pushStateBehavior?: PushStateBehavior;
+  publishLabel?: string;
+  subscribeLabel?: string;
+  sendLabel?: string;
+  receiveLabel?: string;
+  requestLabel?: string;
+  replyLabel?: string;
+  extensions?: Record<string, React.ComponentType<ExtensionComponentProps>>;
 }
 
 export interface ShowConfig {
+  sidebar?: boolean;
   info?: boolean;
-  channels?: boolean;
   servers?: boolean;
+  operations?: boolean;
   messages?: boolean;
+  messageExamples?: boolean;
   schemas?: boolean;
-}
-
-export interface ExpandNestedConfig {
-  root?: boolean;
-  elements?: boolean;
+  errors?: boolean;
 }
 
 export interface ExpandConfig {
-  channels?: ExpandNestedConfig;
-  servers?: ExpandNestedConfig;
-  messages?: ExpandNestedConfig;
-  schemas?: ExpandNestedConfig;
+  messageExamples?: boolean;
+}
+
+export interface SideBarConfig {
+  showServers?: 'byDefault' | 'bySpecTags' | 'byServersTags';
+  showOperations?: 'byDefault' | 'bySpecTags' | 'byOperationsTags';
+  useChannelAddressAsIdentifier?: boolean;
 }

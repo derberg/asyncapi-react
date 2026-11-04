@@ -12,33 +12,31 @@ See the definition of the object that you must pass to props to modify the compo
 interface ConfigInterface {
   schemaID?: string;
   show?: {
+    sidebar?: boolean;
     info?: boolean;
-    channels?: boolean;
     servers?: boolean;
+    operations?: boolean;
     messages?: boolean;
+    messageExamples?: boolean;
     schemas?: boolean;
+    errors?: boolean;
   };
   expand?: {
-    channels?: {
-      root?: boolean;
-      elements?: boolean;
-    };
-    servers?: {
-      root?: boolean;
-      elements?: boolean;
-    };
-    messages?: {
-      root?: boolean;
-      elements?: boolean;
-    };
-    schemas?: {
-      root?: boolean;
-      elements?: boolean;
-    };
+    messageExamples?: boolean;
   },
-  showErrors?: boolean;
+  sidebar?: {
+    showServers?: 'byDefault' | 'bySpecTags' | 'byServersTags';
+    showOperations?: 'byDefault' | 'bySpecTags' | 'byOperationsTags';
+    useChannelAddressAsIdentifier?: boolean;
+  },
   parserOptions?: ParserOptions;
-  pushStateBehavior?: (hash: string) => void;
+  publishLabel?: string;
+  subscribeLabel?: string;
+  sendLabel?: string;
+  receiveLabel?: string;
+  requestLabel?: string;
+  replyLabel?: string;
+  extensions?: Record<string, React.ComponentType<ExtensionComponentProps>>;
 }
 ```
 
@@ -50,28 +48,63 @@ interface ConfigInterface {
 - **show?: Partial<ShowConfig>**
 
   This field contains configuration responsible for rendering specific parts of the AsyncAPI component.
-  All fields are set to `true` by default.
+  The `sidebar` and `messageExamples` fields are set to `false` by default. The default for all other fields is `true`.
 
+  The examples for messages shown within an operation are always displayed. To also show examples for the
+  standalone messages in the "Messages" section, set `messageExamples` to `true`.
+
+- **sidebar?: Partial<SideBarConfig>**
+
+  This field contains configuration responsible for the way of working of the sidebar.
+  `showServers` field is set to `byDefault` by default.
+  `showOperations` field is set to `byDefault` by default.
+  `useChannelAddressAsIdentifier`: for AsyncAPI v3 documents, use the operation summary or channel address in the sidebar instead of the operationId.
+  By default, this behavior is applied only to AsyncAPI v2 documents.
+  
 - **expand?: Partial<ExpandConfig>**
 
-  This field contains configuration responsible for expanding specific parts of the AsyncAPI component automatically.
-  `root` refers to a root component for specific parts of the AsyncAPI component, and `elements` refers to elements inside the `root` component.
-  By default, `expand.channels.root` is set to `true`.
-
-- **showErrors?: boolean**
-
-  This field turns on or off the option displaying validation or parsing errors that show at the top of the component.
-  This field is set to `true` by default.
+  This field contains configuration responsible for collapsing and expanding component sections.
+  `messageExamples` field is set to `false` by default.
 
 - **parserOptions?: ParserOptions**
 
-  This field contains configuration for [`asyncapi-parser`](https://github.com/asyncapi/parser). See available options [here](https://github.com/asyncapi/parser-js/blob/master/API.md#parser).
+  This field contains configuration for [`asyncapi-parser`](https://github.com/asyncapi/parser). See available options [here](https://github.com/asyncapi/parser-js/blob/master/API.md#module_@asyncapi/parser..parse).
   This field is set to `null` by default.
 
-- **pushStateBehavior?: (hash: string) => void**
+- **publishLabel?: string**
 
-  This field contains custom logic for changing the `hash` parameter in the URL of a page.
-  See the default logic [here](../../library/src/store/useChangeHash.ts#L11).
+  This field contains configuration responsible for customizing the label for publish operations.This take effect for AsyncAPI v2 documents.
+  This field is set to `PUB` by default. 
+
+- **subscribeLabel?: string**
+
+  This field contains configuration responsible for customizing the label for subscribe operations. This take effect for AsyncAPI v2 documents.
+  This field is set to `SUB` by default.
+
+- **sendLabel?: string**
+
+  This field contains configuration responsible for customizing the label for send operation. This takes effect when rendering AsyncAPI v3 documents.
+  This field is set to `SEND` by default.
+
+- **receiveLabel?: string**
+
+  This field contains configuration responsible for customizing the label for receive operation. This takes effect when rendering AsyncAPI v3 documents.
+  This field is set to `RECEIVE` by default.
+
+- **requestLabel?: string**
+
+  This field contains configuration responsible for customizing the label for request operation. This takes effect when rendering AsyncAPI v3 documents.
+  This field is set to `REQUEST` by default.
+
+- **replyLabel?: string**
+
+  This field contains configuration responsible for customizing the label for response operation. This takes effect when rendering AsyncAPI v3 documents.
+  This field is set to `REPLY` by default.
+
+- **extensions?: Record<string, React.ComponentType<ExtensionComponentProps>>**
+
+  This field contains configuration responsible for adding custom extension components.
+  This field will contain default components.
 
 ## Examples
 
@@ -82,21 +115,44 @@ See exemplary component configuration in TypeScript and JavaScript.
 ```tsx
 import * as React from "react";
 import { render } from "react-dom";
-import AsyncApiComponent, { ConfigInterface } from "asyncapi-react";
+import AsyncAPIComponent, { ConfigInterface } from "@asyncapi/react-component";
+import CustomExtension from "./CustomExtension";
 
 import { schema } from "./mock";
 
-const config: Partial<ConfigInterface> = {
-  schemaID: 'custom-name',
+const config: ConfigInterface = {
+  schemaID: 'custom-spec',
   show: {
-    schemas: false
+    operations: false,
+    errors: false,
   },
-  showErrors: false
+  sidebar: {
+    showServers: 'byServersTags',
+    showOperations: 'bySpecTags',
+  },
+  expand: {
+    messageExamples: false,
+  },
+  extensions: {
+    'x-custom-extension': CustomExtension
+  }
 };
 
-const App = () => <AsyncApiComponent schema={schema} config={config} />;
+const App = () => <AsyncAPIComponent schema={schema} config={config} />;
 
 render(<App />, document.getElementById("root"));
+```
+
+```tsx
+// CustomExtension.tsx
+import { ExtensionComponentProps } from '@asyncapi/react-component/lib/types/components/Extensions';
+
+export default function CustomExtension(props: ExtensionComponentProps<string>) {
+  return <div>
+    <h1>{props.propertyName}</h1>
+    <p>{props.propertyValue}</p>
+  </div>
+}
 ```
 
 ### JavaScript
@@ -104,35 +160,70 @@ render(<App />, document.getElementById("root"));
 ```jsx
 import * as React from "react";
 import { render } from "react-dom";
-import AsyncApiComponent from "asyncapi-react";
+import AsyncAPIComponent from "@asyncapi/react-component";
 
 import { schema } from "./mock";
 
 const config = {
-  schemaID: 'custom-name',
+  schemaID: 'custom-spec',
   show: {
-    schemas: false
+    operations: false,
+    errors: false,
   },
-  showErrors: false
+  sidebar: {
+    showServers: 'byServersTags',
+    showOperations: 'bySpecTags',
+  },
+  expand: {
+    messageExamples: true,
+  },
 };
 
-const App = () => <AsyncApiComponent schema={schema} config={config} />;
+const App = () => <AsyncAPIComponent schema={schema} config={config} />;
 
 render(<App />, document.getElementById("root"));
+```
+
+```jsx
+// CustomExtension.jsx
+export default function CustomExtension(props) {
+  return <div>
+    <h1>{props.propertyName}</h1>
+    <p>{props.propertyValue}</p>
+  </div>
+}
 ```
 
 In the above examples, after concatenation with the default configuration, the resulting configuration looks as follows:
 
 ```js
 {
-  schemaID: 'custom-name',
+  schemaID: 'custom-spec',
   show: {
+    sidebar: false,
     info: true,
     servers: true,
-    channels: true,
+    operations: false,
     messages: true,
-    schemas: false
+    schemas: true,
+    errors: false,
   },
-  showErrors: false
+  expand: {
+    messageExamples: true,
+  },
+  sidebar: {
+    showServers: 'byServersTags',
+    showOperations: 'bySpecTags',
+  },
+  publishLabel: 'PUB',
+  subscribeLabel: 'SUB',
+  sendLabel: 'SEND',
+  receiveLabel: 'RECEIVE',
+  requestLabel: 'REQUEST',
+  replyLabel: 'REPLY', 
+  extensions: {
+    // default extensions...
+    'x-custom-extension': CustomExtension
+  }
 }
 ```

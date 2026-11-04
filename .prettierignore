@@ -6,8 +6,12 @@
 
 # production
 /**/lib
+/**/bundles
 /**/build
 /**/dist
+/library/browser
+/library/lib
+/library/styles
 
 # misc
 .DS_Store
@@ -15,3 +19,6 @@ npm-debug.log*
 lerna-debug.log*
 /**/*.tgz
 /.github
+
+playground/.next/
+playground/out/

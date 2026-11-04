@@ -1,31 +1,40 @@
 import { ConfigInterface } from './config';
+import {
+  PUBLISH_LABEL_DEFAULT_TEXT,
+  RECEIVE_TEXT_LABEL_DEFAULT_TEXT,
+  REPLIER_LABEL_DEFAULT_TEXT,
+  REQUEST_LABEL_DEFAULT_TEXT,
+  SEND_LABEL_DEFAULT_TEXT,
+  SUBSCRIBE_LABEL_DEFAULT_TEXT,
+} from '../constants';
+import XExtension from '../components/supportedExtensions/XExtension';
 
 export const defaultConfig: ConfigInterface = {
   schemaID: '',
   show: {
+    sidebar: false,
     info: true,
-    channels: true,
     servers: true,
+    operations: true,
     messages: true,
+    messageExamples: false,
     schemas: true,
+    errors: true,
   },
   expand: {
-    channels: {
-      root: true,
-      elements: false,
-    },
-    servers: {
-      root: false,
-      elements: false,
-    },
-    messages: {
-      root: false,
-      elements: false,
-    },
-    schemas: {
-      root: false,
-      elements: false,
-    },
+    messageExamples: false,
   },
-  showErrors: true,
+  sidebar: {
+    showServers: 'byDefault',
+    showOperations: 'byDefault',
+  },
+  publishLabel: PUBLISH_LABEL_DEFAULT_TEXT,
+  subscribeLabel: SUBSCRIBE_LABEL_DEFAULT_TEXT,
+  sendLabel: SEND_LABEL_DEFAULT_TEXT,
+  receiveLabel: RECEIVE_TEXT_LABEL_DEFAULT_TEXT,
+  requestLabel: REQUEST_LABEL_DEFAULT_TEXT,
+  replyLabel: REPLIER_LABEL_DEFAULT_TEXT,
+  extensions: {
+    'x-x': XExtension,
+  },
 };

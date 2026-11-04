@@ -1,82 +1,159 @@
 import React from 'react';
 
-import { TermsOfServiceComponent } from './TermsOfService';
-import { LicenseComponent } from './License';
-import { ContactComponent } from './Contact';
-import { DefaultContentTypeComponent } from './DefaultContentType';
+import { Extensions, Href, Markdown, Tags } from '../../components';
+import { useSpec } from '../../contexts';
+import {
+  TERMS_OF_SERVICE_TEXT,
+  CONTENT_TYPES_SITE,
+  URL_SUPPORT_TEXT,
+  EXTERAL_DOCUMENTATION_TEXT,
+} from '../../constants';
+import { SlotRenderer } from '../../components/PluginSlotRenderer';
+import { usePlugin } from '../../contexts/usePlugin';
+import { PluginSlot } from '../../types';
 
-import { Markdown, CollapseButton } from '../../components';
-import { bemClasses } from '../../helpers';
-import { Info, DefaultContentType } from '../../types';
+export const Info: React.FunctionComponent = () => {
+  const asyncapi = useSpec();
+  const pluginManager = usePlugin();
 
-interface Props {
-  info: Info;
-  defaultContentType?: DefaultContentType;
-}
+  const info = asyncapi.info();
+  if (!info) {
+    return null;
+  }
 
-export const InfoComponent: React.FunctionComponent<Props> = ({
-  info: { title, version, description, termsOfService, contact, license },
-  defaultContentType,
-}) => {
-  const className = `info`;
+  const specId = asyncapi.info().id();
+  const externalDocs = asyncapi.info().externalDocs();
+  const license = info.license();
+  const termsOfService = info.termsOfService();
+  const defaultContentType = asyncapi.defaultContentType();
+  const contact = info.contact();
+  const extensions = info.extensions();
+
   const showInfoList =
-    defaultContentType || termsOfService || license || contact;
+    license ?? termsOfService ?? defaultContentType ?? contact ?? externalDocs;
 
   return (
-    <section
-      className={bemClasses.element(className)}
-      id={bemClasses.identifier([className])}
-    >
-      <header className={bemClasses.element(`${className}-header`)}>
-        <div className={bemClasses.element(`${className}-header-main`)}>
-          <h1>
-            <span className={bemClasses.element(`${className}-header-title`)}>
-              {title}
-            </span>
-            {version && (
-              <span
-                className={bemClasses.element(`${className}-header-version`)}
-              >
-                {version}
-              </span>
-            )}
-          </h1>
-          <CollapseButton />
+    <div className="panel-item">
+      <div className="panel-item--center px-8 text-left" id="introduction">
+        <div className="text-4xl">
+          {info.title()}&nbsp;{info.version()}
         </div>
-        {!showInfoList ? null : (
-          <ul className={bemClasses.element(`${className}-list`)}>
-            {defaultContentType && (
-              <li
-                className={bemClasses.element(
-                  `${className}-default-content-type`,
+
+        {showInfoList && (
+          <ul className="flex flex-wrap mt-2 leading-normal">
+            {license && (
+              <li className="inline-block mt-2 mr-2">
+                {license.url() ? (
+                  <Href
+                    className="border border-solid border-orange-300 hover:bg-orange-300 hover:text-orange-600 text-orange-500 font-bold no-underline text-xs uppercase rounded px-3 py-1"
+                    href={license.url() ?? ''}
+                  >
+                    <span>{license.name()}</span>
+                  </Href>
+                ) : (
+                  <strong className="border border-solid border-orange-300 hover:bg-orange-300 hover:text-orange-600 text-orange-500 no-underline text-xs uppercase rounded px-3 py-1">
+                    {license.name()}
+                  </strong>
                 )}
-              >
-                <DefaultContentTypeComponent type={defaultContentType} />
               </li>
             )}
             {termsOfService && (
-              <li
-                className={bemClasses.element(`${className}-terms-of-service`)}
-              >
-                <TermsOfServiceComponent url={termsOfService} />
+              <li className="inline-block mt-2 mr-2">
+                <Href
+                  className="border border-solid border-orange-300 hover:bg-orange-300 hover:text-orange-600 text-orange-500 font-bold no-underline text-xs uppercase rounded px-3 py-1"
+                  href={termsOfService}
+                >
+                  <span>{TERMS_OF_SERVICE_TEXT}</span>
+                </Href>
               </li>
             )}
-            {license && (
-              <li className={bemClasses.element(`${className}-license`)}>
-                <LicenseComponent {...license} />
+            {defaultContentType && (
+              <li className="inline-block mt-2 mr-2">
+                <Href
+                  className="border border-solid border-orange-300 hover:bg-orange-300 hover:text-orange-600 text-orange-500 font-bold no-underline text-xs uppercase rounded px-3 py-1"
+                  href={`${CONTENT_TYPES_SITE}/${defaultContentType}`}
+                >
+                  <span>{defaultContentType}</span>
+                </Href>
               </li>
             )}
-            {contact && (contact.url || contact.email) ? (
-              <ContactComponent {...contact} />
-            ) : null}
+            {externalDocs && (
+              <li className="inline-block mt-2 mr-2">
+                <Href
+                  className="border border-solid border-orange-300 hover:bg-orange-300 hover:text-orange-600 text-orange-500 font-bold no-underline text-xs uppercase rounded px-3 py-1"
+                  href={externalDocs.url()}
+                  title={externalDocs.description() ?? undefined}
+                >
+                  <span>{EXTERAL_DOCUMENTATION_TEXT}</span>
+                </Href>
+              </li>
+            )}
+            {contact && (
+              <>
+                {contact.url() && (
+                  <li className="inline-block mt-2 mr-2">
+                    <Href
+                      className="border border-solid border-purple-300 hover:bg-purple-300 hover:text-purple-600 text-purple-500 font-bold no-underline text-xs uppercase rounded px-3 py-1"
+                      href={contact.url() ?? ''}
+                    >
+                      <span>{contact.name() ?? URL_SUPPORT_TEXT}</span>
+                    </Href>
+                  </li>
+                )}
+                {contact.email() && (
+                  <li className="inline-block mt-2 mr-2">
+                    <Href
+                      className="border border-solid border-purple-300 hover:bg-purple-300 hover:text-purple-600 text-purple-500 font-bold no-underline text-xs uppercase rounded px-3 py-1"
+                      href={`mailto:${contact.email()}`}
+                    >
+                      <span>{contact.email()}</span>
+                    </Href>
+                  </li>
+                )}
+              </>
+            )}
+            {specId && (
+              <li className="inline-block mt-2 mr-2">
+                <strong className="border border-solid border-blue-300 hover:bg-blue-300 hover:text-blue-600 text-blue-500 no-underline text-xs uppercase rounded px-3 py-1">
+                  ID: {specId}
+                </strong>
+              </li>
+            )}
           </ul>
         )}
-      </header>
-      {description && (
-        <div className={bemClasses.element(`${className}-description`)}>
-          <Markdown>{description}</Markdown>
-        </div>
-      )}
-    </section>
+
+        {info.hasDescription() && (
+          <div className="mt-4">
+            <Markdown>{info.description()}</Markdown>
+          </div>
+        )}
+
+        {asyncapi.info().tags().length > 0 && (
+          <div className="mt-4">
+            <Tags tags={asyncapi.info().tags()} />
+          </div>
+        )}
+
+        {extensions.length > 0 && (
+          <div className="mt-4">
+            <Extensions name="Info Extensions" item={info} />
+          </div>
+        )}
+        {(pluginManager?.getComponentsForSlot(PluginSlot.INFO)?.length ?? 0) >
+          0 && (
+          <SlotRenderer
+            context={{
+              slot: PluginSlot.INFO,
+              document: asyncapi,
+              info,
+              schema: info,
+            }}
+            pluginManager={pluginManager}
+          />
+        )}
+      </div>
+
+      <div className="panel-item--right" />
+    </div>
   );
 };

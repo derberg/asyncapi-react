@@ -1,26 +1,14 @@
+/* eslint-disable react/no-unescaped-entities */
 import * as React from 'react';
-// @ts-ignore
+// @ts-expect-error no types exists
 import { register } from 'web-react-components';
-import AsyncApiComponent, { AsyncApiProps } from '@asyncapi/react-component';
+import AsyncApiComponent, {
+  AsyncApiProps,
+  FetchingSchemaInterface,
+} from '@asyncapi/react-component';
 
-export interface AsyncApiWebComponentProps extends AsyncApiProps {
-  cssImportPath?: string;
-  schemaFetchOptions?: RequestInit;
-  schemaUrl: string;
-}
-
-export class AsyncApiWebComponent extends React.Component<
-  AsyncApiWebComponentProps
-> {
-  constructor(props: AsyncApiWebComponentProps) {
-    super(props);
-  }
-
-  render() {
-    const finalCssImportPath =
-      this.props.cssImportPath || 'assets/asyncapi.css';
-
-    /* Angular 11.0.7 running in 'production mode + enforced stricter type
+/**
+ * Angular 11.0.7 running in 'production mode + enforced stricter type
     checking and stricter bundle budgets' mode showed requirement of explicit
     definition of conditions, hence slightly visually excessive code.
     Both undefined and 'undefined' are used because first has typeof
@@ -29,37 +17,79 @@ export class AsyncApiWebComponent extends React.Component<
     calls 'AsyncApiWebComponent.prototype.render' multiple times for each
     property specified in function 'register', assigning primitive type
     `undefined` to undefined properties first time and assigning string
-    `'undefined'` each next time. */
+    `'undefined'` each next time.  
+ */
+function retrieveSchemaProp(
+  props: AsyncApiWebComponentProps,
+): FetchingSchemaInterface {
+  let schemaUrl = props.schemaUrl;
+  let schemaFetchOptions = props.schemaFetchOptions;
 
+  if (!schemaUrl || schemaUrl === 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    schemaUrl = undefined as any;
+  }
+  if (!schemaFetchOptions) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    schemaFetchOptions = undefined as any;
+  }
+
+  let schema = props.schema || {};
+  if (schemaUrl) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const schemaRequestOptions = schemaFetchOptions
+      ? JSON.parse(JSON.stringify(schemaFetchOptions))
+      : (schema as FetchingSchemaInterface).requestOptions ?? {};
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    schema = { url: schemaUrl, requestOptions: schemaRequestOptions };
+  }
+
+  return schema as FetchingSchemaInterface; // NOSONAR
+}
+
+export interface AsyncApiWebComponentProps extends AsyncApiProps {
+  cssImportPath?: string;
+  schemaFetchOptions?: RequestInit;
+  schemaUrl: string;
+}
+
+export class AsyncApiWebComponent extends React.Component<AsyncApiWebComponentProps> {
+  private lastUrlCheck: number = Date.now();
+
+  shouldComponentUpdate(nextProps: Readonly<AsyncApiWebComponentProps>) {
+    const prevSchema = retrieveSchemaProp(this.props);
+    const nextSchema = retrieveSchemaProp(nextProps);
+
+    if (!prevSchema || !nextSchema || !prevSchema.url || !nextSchema.url) {
+      return true;
+    }
+    if (prevSchema.url === nextSchema.url) {
+      const dateNow = Date.now();
+      // if the difference between updates of the same urls occurred less or equal than 25 milliseconds, consider no change.
+      if (this.lastUrlCheck <= dateNow - 25) {
+        this.lastUrlCheck = dateNow;
+        return true;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  render() {
     const props = this.props;
-    let schemaUrl = props.schemaUrl;
-    let schemaFetchOptions = props.schemaFetchOptions;
-
-    if (!schemaUrl || schemaUrl === 'undefined') {
-      schemaUrl = undefined as any;
-    }
-    if (!schemaFetchOptions || schemaFetchOptions === 'undefined') {
-      schemaFetchOptions = undefined as any;
-    }
-
-    let schema = props.schema || {};
-
-    if (schemaUrl) {
-      const schemaRequestOptions = schemaFetchOptions
-        ? JSON.parse(JSON.stringify(schemaFetchOptions))
-        : schema.requestOptions || {};
-      schema = { url: schemaUrl, requestOptions: schemaRequestOptions };
-    }
+    const finalCssImportPath = props.cssImportPath ?? 'assets/default.min.css';
+    const schema = retrieveSchemaProp(this.props);
 
     return (
       <>
-        <style>@import '{finalCssImportPath}';</style>
+        <style>{`@import '${finalCssImportPath}';`}</style>
         <AsyncApiComponent {...this.props} schema={schema} />
       </>
     );
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-call
 register(AsyncApiWebComponent, 'asyncapi-component', [
   'schema',
   'schemaFetchOptions',
